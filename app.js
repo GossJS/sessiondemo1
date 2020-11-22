@@ -1,14 +1,19 @@
 export default (express, bodyParser, fs, cookieParser) => {
     const users = new Set();
     const app = express();
-
+    const protect = (r, res, next) => {
+        const { user } = r.cookies;
+        if (users.has(user)) return next();
+        res.redirect('/denied');
+    };
     app
     .use(cookieParser())
     .get('/login/', (req, res) => res.send('eliasgoss'))
     .get('/code/', (req, res) => fs.createReadStream(import.meta.url.substring(7)).pipe(res))
-    .get('/profile', r => {
+    .get('/denied', r => r.res.status(403).send('Доступ запрещён'))
+    .get('/profile', protect, r => {
         const { user } = r.cookies;
-        r.res.send(users.has(user) ? `Вы нашлись, ${user}!`: 'Вас не удалось найти!');
+        r.res.send(`Вы нашлись, ${user}!`);
     })
     .get('/prune', r => {
         const cookieHead = {'Set-Cookie': `user=.;path=/;expires=Thu, 01 Jan 1970 00:00:01 GMT`};
